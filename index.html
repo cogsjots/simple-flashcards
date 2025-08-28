@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcard Generator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: #f4f4f8;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .controls {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .controls label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+
+    .controls input, .controls button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .controls button {
+      background: #3498db;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .controls button:hover {
+      background: #2980b9;
+    }
+
+    #output {
+      display: none;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .print-section, .print-section * {
+        visibility: visible;
+      }
+      .print-section {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .card-page {
+        page-break-after: always;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+      }
+      .card {
+        break-inside: avoid;
+      }
+    }
+
+    .print-section {
+      display: none;
+    }
+
+    .card-page {
+      display: grid;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 0; /* Sharp edges for clean cutting */
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .category-label {
+      position: absolute;
+      top: 5px;
+      right: 5px; /* Now on top-right */
+      font-size: 0.7em;
+      color: #555;
+      background: rgba(255,255,255,0.8);
+      padding: 2px 6px;
+      border-radius: 4px;
+      z-index: 10;
+    }
+
+    .card-content {
+      font-size: 1.4em;
+      font-weight: bold;
+      line-height: 1.4;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 90%;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .front .card-content {
+      color: #2c3e50;
+    }
+
+    .back .card-content {
+      color: #27ae60;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Flashcard Generator</h1>
+
+  <div class="controls">
+    <label>Upload CSV File (category,front,back):</label>
+    <input type="file" id="csvFile" accept=".csv" />
+
+    <label>Rows per Page:</label>
+    <input type="number" id="rows" value="4" min="1" max="10" />
+
+    <label>Columns per Page:</label>
+    <input type="number" id="cols" value="2" min="1" max="5" />
+
+    <button id="generateBtn">Generate Flashcards</button>
+    <button onclick="window.print()">Print or Save as PDF</button>
+  </div>
+
+  <div id="output" class="print-section"></div>
+
+  <script>
+    document.getElementById("generateBtn").addEventListener("click", handleGenerate);
+
+    function handleGenerate() {
+      const fileInput = document.getElementById("csvFile");
+      const rows = parseInt(document.getElementById("rows").value);
+      const cols = parseInt(document.getElementById("cols").value);
+      const output = document.getElementById("output");
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please select a CSV file.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const csv = e.target.result;
+        const data = parseCSV(csv);
+        if (data.length === 0) {
+          alert("CSV file is empty or in incorrect format. Ensure it has headers: category,front,back");
+          return;
+        }
+        generateFlashcards(data, rows, cols, output);
+        output.style.display = "block";
+      };
+
+      reader.readAsText(file);
+    }
+
+    // Robust CSV parser that handles quoted fields with commas
+    function parseCSV(csv) {
+      const lines = csv.trim().split(/\r\n|\n/);
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+      const result = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].trim();
+        if (!row) continue;
+
+        const values = [];
+        let inQuotes = false;
+        let currentValue = "";
+
+        for (let char of row) {
+          if (char === '"' && !inQuotes) {
+            inQuotes = true;
+          } else if (char === '"' && inQuotes) {
+            inQuotes = false;
+          } else if (char === ',' && !inQuotes) {
+            values.push(currentValue.trim());
+            currentValue = "";
+          } else {
+            currentValue += char;
+          }
+        }
+        values.push(currentValue.trim());
+
+        if (values.length === headers.length) {
+          const entry = {};
+          headers.forEach((h, idx) => {
+            entry[h] = values[idx].replace(/^"(.*)"$/, '$1'); // Remove surrounding quotes
+          });
+          result.push(entry);
+        } else {
+          console.warn("Row skipped (incorrect column count):", values);
+        }
+      }
+
+      return result;
+    }
+
+    function generateFlashcards(data, rows, cols, output) {
+      const cardsPerPage = rows * cols;
+      output.innerHTML = "";
+
+      // Calculate card height and width to fill the page exactly
+      const cardHeight = `calc(100vh / ${rows})`;
+      const cardWidth = `calc(100vw / ${cols})`;
+
+      // Generate FRONT pages (odd)
+      for (let i = 0; i < data.length; i += cardsPerPage) {
+        const page = document.createElement("div");
+        page.className = "card-page front";
+        page.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        page.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+        for (let j = 0; j < cardsPerPage; j++) {
+          const idx = i + j;
+          if (idx >= data.length) break;
+
+          const card = document.createElement("div");
+          card.className = "card front";
+          card.style.height = cardHeight;
+          card.style.width = cardWidth;
+
+          const categoryLabel = document.createElement("div");
+          categoryLabel.className = "category-label";
+          categoryLabel.textContent = data[idx].category || "Other";
+
+          const content = document.createElement("div");
+          content.className = "card-content";
+          content.textContent = data[idx].front;
+
+          card.appendChild(categoryLabel);
+          card.appendChild(content);
+          page.appendChild(card);
+        }
+        output.appendChild(page);
+      }
+
+      // Generate BACK pages (even)
+      for (let i = 0; i < data.length; i += cardsPerPage) {
+        const page = document.createElement("div");
+        page.className = "card-page back";
+        page.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        page.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+        for (let j = 0; j < cardsPerPage; j++) {
+          const idx = i + j;
+          if (idx >= data.length) break;
+
+          const card = document.createElement("div");
+          card.className = "card back";
+          card.style.height = cardHeight;
+          card.style.width = cardWidth;
+
+          const categoryLabel = document.createElement("div");
+          categoryLabel.className = "category-label";
+          categoryLabel.textContent = data[idx].category || "Other";
+
+          const content = document.createElement("div");
+          content.className = "card-content";
+          content.textContent = data[idx].back;
+
+          card.appendChild(categoryLabel);
+          card.appendChild(content);
+          page.appendChild(card);
+        }
+        output.appendChild(page);
+      }
+    }
+  </script>
+
+</body>
+</html>

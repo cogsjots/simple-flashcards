@@ -57,6 +57,23 @@
       padding-right: 8px;
     }
 
+    /* Add invisible placeholder to preserve input-side space */
+    .input-row.advanced-row::after {
+      content: "";
+      flex: 2; /* Matches input field size */
+    }  
+
+    .advanced-toggle {
+      flex: 1;
+      text-align: right;
+      padding-right: 8px;      
+      margin-top: 15px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #3498db;
+      font-size: 0.9em;
+    }
+
     .input-row .value-preview {
       font-family: monospace;
       font-size: 0.9em;
@@ -101,14 +118,6 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     } */
-
-    .advanced-toggle {
-      margin: 15px 0;
-      color: #3498db;
-      cursor: pointer;
-      text-decoration: underline;
-      font-size: 0.9em;
-    }
 
     .advanced-section {
       display: none;
@@ -264,8 +273,10 @@
       <input type="number" id="cols" value="2" min="1" max="5" />
     </div>
 
-    <div class="advanced-toggle" onclick="toggleAdvanced()">
-      Advanced Options ▶
+    <div class="input-row advanced-row">
+      <div class="advanced-toggle" onclick="toggleAdvanced()">
+        Advanced Options ▶
+      </div>
     </div>
     <div id="advancedSection" class="advanced-section">
       <div class="input-row">

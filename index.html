@@ -157,7 +157,21 @@
       display: none;
     }
 
+    #errorMessages {
+      margin-top: 10px;
+      padding: 10px;
+      background: #ffe6e6;
+      border: 1px solid #ff9999;
+      border-radius: 4px;
+      color: #d00;
+      font-size: 0.9em;
+      display: none;
+    }
+
     @media print {
+      #errorMessages, .no-print {
+        display: none !important;
+      }
       body * {
         visibility: hidden;
       }
@@ -249,6 +263,7 @@
 
     .front .card-content {
       color: var(--color-front-text);
+      font-size: 1.5em;
     }
 
     .back .card-content {
@@ -327,6 +342,7 @@
 
     <button id="generateBtn">Generate Flashcards</button>
     <button onclick="window.print()">Print or Save as PDF</button>
+    <div id="errorMessages"></div>
   </div>
 
   <div id="output" class="print-section"></div>
@@ -378,9 +394,13 @@
       const colorBack = document.getElementById("colorBack").value;
       const colorBackFront = document.getElementById("colorBackFront").value;
       const output = document.getElementById("output");
+      const errorMsg = document.getElementById("errorMessages");
+      errorMsg.style.display = "none";
+      errorMsg.innerHTML = "";
 
       if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Please select a CSV file.");
+        errorMsg.innerHTML = "Please select a CSV file.";
+        errorMsg.style.display = "block";
         return;
       }
 
@@ -394,9 +414,18 @@
 
       reader.onload = function (e) {
         const csv = e.target.result;
-        const data = parseCSV(csv);
+        const { data, warnings } = parseCSV(csv);
+
+        if (warnings.length > 0) {
+          errorMsg.innerHTML = warnings.join("<br>");
+          errorMsg.style.display = "block";
+        } else {
+          errorMsg.style.display = "none";
+        }
+
         if (data.length === 0) {
-          alert("CSV file is empty or in incorrect format. Ensure it has headers: category,front,back");
+          errorMsg.innerHTML = "CSV file is empty or in incorrect format. Ensure it has headers: category,front,back";
+          errorMsg.style.display = "block";
           return;
         }
         generateFlashcards(data, rows, cols, showFrontOnBack, output);
@@ -484,7 +513,7 @@
         data.push(entry);
       }
 
-      return data;
+      return { data, warnings };
     }
 
     function generateFlashcards(data, rows, cols, showFrontOnBack, output) {

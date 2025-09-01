@@ -408,44 +408,83 @@
 
     // Robust CSV parser that handles quoted fields with commas
     function parseCSV(csv) {
-      const lines = csv.trim().split(/\r\n|\n/);
+      const lines = [];
+      const warnings = [];
+      let currentLine = "";
+      let inQuotes = false;
+
+      // Process character by character to preserve newlines inside quotes
+      for (let i = 0; i < csv.length; i++) {
+        const char = csv[i];
+        const nextChar = i < csv.length - 1 ? csv[i + 1] : '';
+
+        currentLine += char;
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            // Escaped quote ""
+            i++;
+            currentLine += '"';
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === '\n' && !inQuotes) {
+          lines.push(currentLine.trim());
+          currentLine = "";
+        }
+      }
+      if (currentLine) lines.push(currentLine.trim());
+
+      if (lines.length === 0 || !lines[0]) {
+        warnings.push("CSV is empty.");
+        return { data: [], warnings };
+      }
+
       const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-      const result = [];
+      const data = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].trim();
-        if (!row) continue;
+        const line = lines[i];
+        if (!line.trim()) continue;
 
         const values = [];
         let inQuotes = false;
         let currentValue = "";
 
-        for (let char of row) {
+        for (let char of line) {
           if (char === '"' && !inQuotes) {
             inQuotes = true;
+            currentValue += '"';
           } else if (char === '"' && inQuotes) {
             inQuotes = false;
+            currentValue += '"';
           } else if (char === ',' && !inQuotes) {
-            values.push(currentValue.trim());
+            values.push(currentValue);
             currentValue = "";
           } else {
             currentValue += char;
           }
         }
-        values.push(currentValue.trim());
+        values.push(currentValue);
 
-        if (values.length === headers.length) {
-          const entry = {};
-          headers.forEach((h, idx) => {
-            entry[h] = values[idx].replace(/^"(.*)"$/, '$1'); // Remove surrounding quotes
-          });
-          result.push(entry);
-        } else {
-          console.warn("Row skipped (incorrect column count):", values);
+        if (values.length !== headers.length) {
+          warnings.push(`Row ${i + 1}: Expected ${headers.length} columns, found ${values.length}.`);
+          continue;
         }
+
+        const entry = {};
+        headers.forEach((h, idx) => {
+          let val = values[idx].trim();
+          // Remove surrounding quotes and convert internal \n to <br>
+          if (val.startsWith('"') && val.endsWith('"')) {
+            val = val.slice(1, -1).replace(/""/g, '"').replace(/\n/g, '<br>').replace(/\\n/g, '<br>');
+          }
+          entry[h] = val;
+        });
+        data.push(entry);
       }
 
-      return result;
+      return data;
     }
 
     function generateFlashcards(data, rows, cols, showFrontOnBack, output) {
@@ -481,7 +520,7 @@
 
           const content = document.createElement("div");
           content.className = "card-content";
-          content.textContent = data[idx].front;
+          content.innerHTML = data[idx].front;
 
           card.appendChild(categoryLabel);
           card.appendChild(content);
@@ -527,15 +566,15 @@
             if (showFrontOnBack) {
               const frontText = document.createElement("div");
               frontText.className = "back-front-text";
-              frontText.textContent = item.front;
+              frontText.innerHTML = item.front;
 
               const backText = document.createElement("div");
-              backText.textContent = item.back;
+              backText.innerHTML = item.back;
 
               content.appendChild(frontText);
               content.appendChild(backText);
             } else {
-              content.textContent = item.back;
+              content.innerHTML = item.back;
             }
 
             card.appendChild(categoryLabel);

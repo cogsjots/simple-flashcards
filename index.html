@@ -124,14 +124,6 @@
       gap: 10px;
     }
 
-   /* .controls input {
-      width: 100%;
-      padding: 10px;
-      margin: 5px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    } */
-
     .advanced-section {
       display: none;
       margin-top: 15px;
@@ -516,6 +508,15 @@
       return { data, warnings };
     }
 
+    function fontResize(text) {
+      const len = text.length;
+      const fontSize = len > 50 ? "1.0rem" :
+                       len > 30 ? "1.3rem" :
+                       len > 20 ? "1.5rem" : "1.7rem";
+
+      return fontSize;                 
+    }
+
     function generateFlashcards(data, rows, cols, showFrontOnBack, output) {
       const cardsPerPage = rows * cols;
       output.innerHTML = "";
@@ -549,7 +550,15 @@
 
           const content = document.createElement("div");
           content.className = "card-content";
-          content.innerHTML = data[idx].front;
+
+          // Auto font size based on text length
+          const text = data[idx].front;
+          const len = text.length;
+          // content.style.fontSize = len > 50 ? "1.0em" :
+          //                        len > 30 ? "1.3em" :
+          //                        len > 20 ? "1.5em" : "1.7em";
+          content.style.fontSize = fontResize(text);
+          content.innerHTML = text;
 
           card.appendChild(categoryLabel);
           card.appendChild(content);
@@ -595,14 +604,21 @@
             if (showFrontOnBack) {
               const frontText = document.createElement("div");
               frontText.className = "back-front-text";
+              frontText.style.fontSize = `calc(${fontResize(item.front)} * 0.8)`;
               frontText.innerHTML = item.front;
 
               const backText = document.createElement("div");
+              // backText.style.fontSize = item.back.length > 50 ? "1.0em" :
+              //                          item.back.length > 30 ? "1.3em" : "1.5em";
+              backText.style.fontSize = fontResize(item.back);
               backText.innerHTML = item.back;
 
               content.appendChild(frontText);
               content.appendChild(backText);
             } else {
+              // content.style.fontSize = item.back.length > 50 ? "1.0em" :
+              //                          item.back.length > 30 ? "1.3em" : "1.5em";
+              content.style.fontSize = fontResize(item.back);
               content.innerHTML = item.back;
             }
 

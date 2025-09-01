@@ -10,6 +10,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --color-front-text: #2c3e50;
+      --color-back-text: #27ae60;
+      --color-back-front-text: #555555;
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       padding: 20px;
@@ -37,21 +43,88 @@
       font-weight: bold;
     }
 
-    .controls input,
-    .controls button {
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .input-row label {
+      flex: 1;
+      font-weight: bold;
+      text-align: right;
+      padding-right: 8px;
+    }
+
+    .input-row .value-preview {
+      font-family: monospace;
+      font-size: 0.9em;
+      background: transparent;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      white-space: nowrap;
+      width: 70px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .input-row input[type="number"],
+    /* .input-row input[type="color"], */
+    .input-row input[type="file"] {
+      flex: 2;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .input-row input[type="color"] {
+      /* width: 60px;
+      height: 30px; */
+      /* flex: 1; */
+      border: none;
+      cursor: pointer;
+    }
+
+    .input-row .span-input {
+      flex: 2; 
+      display: flex; 
+      align-items: center; 
+      gap: 10px;
+    }
+
+   /* .controls input {
       width: 100%;
       padding: 10px;
       margin: 5px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
+    } */
+
+    .advanced-toggle {
+      margin: 15px 0;
+      color: #3498db;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: 0.9em;
+    }
+
+    .advanced-section {
+      display: none;
+      margin-top: 15px;
     }
 
     .controls button {
+      width: 100%;
+      padding: 10px;
+      margin: 15px 0 5px;
       background: #3498db;
       color: white;
       font-size: 16px;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
-      margin-top: 15px;
     }
 
     .controls button:hover {
@@ -153,11 +226,20 @@
     }
 
     .front .card-content {
-      color: #2c3e50;
+      color: var(--color-front-text);
     }
 
     .back .card-content {
-      color: #27ae60;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--color-back-text);
+    }
+
+    .back-front-text {
+      font-size: 0.9em;
+      color: var(--color-back-front-text);
+      font-weight: normal;
+      margin-bottom: 5px;
     }
   </style>
 </head>
@@ -167,14 +249,57 @@
   <h1>Flashcard Generator</h1>
 
   <div class="controls">
-    <label>Upload CSV File (category,front,back):</label>
-    <input type="file" id="csvFile" accept=".csv" />
+    <div class="input-row">
+      <label>Upload CSV File:</label>
+      <input type="file" id="csvFile" accept=".csv" />
+    </div>
 
-    <label>Rows per Page:</label>
-    <input type="number" id="rows" value="4" min="1" max="10" />
+    <div class="input-row">
+      <label>Rows per Page:</label>
+      <input type="number" id="rows" value="4" min="1" max="10" />
+    </div>
 
-    <label>Columns per Page:</label>
-    <input type="number" id="cols" value="2" min="1" max="5" />
+    <div class="input-row">
+      <label>Columns per Page:</label>
+      <input type="number" id="cols" value="2" min="1" max="5" />
+    </div>
+
+    <div class="advanced-toggle" onclick="toggleAdvanced()">
+      Advanced Options ▶
+    </div>
+    <div id="advancedSection" class="advanced-section">
+      <div class="input-row">
+        <label style="height: auto;">Show front on back:</label>
+        <div style="flex: 2; display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" id="showFrontOnBack" style="height: auto;" />
+          <span style="font-size: 0.9em; color: #555;">Enable</span>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>Front Text Color:</label>
+        <div class="span-input">
+          <span class="value-preview" id="previewFront"></span>
+          <input type="color" id="colorFront" oninput="updatePreview('colorFront', 'previewFront')" />
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>Back Text Color:</label>
+        <div class="span-input">
+          <span class="value-preview" id="previewBack"></span>
+          <input type="color" id="colorBack" oninput="updatePreview('colorBack', 'previewBack')" />
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>Front on Back Color:</label>
+        <div class="span-input">
+          <span class="value-preview" id="previewBackFront"></span>
+          <input type="color" id="colorBackFront" oninput="updatePreview('colorBackFront', 'previewBackFront')" />
+        </div>
+      </div>
+    </div>
 
     <button id="generateBtn">Generate Flashcards</button>
     <button onclick="window.print()">Print or Save as PDF</button>
@@ -183,18 +308,62 @@
   <div id="output" class="print-section"></div>
 
   <script>
+    function toggleAdvanced() {
+      const section = document.getElementById("advancedSection");
+      const toggle = document.querySelector(".advanced-toggle");
+      if (section.style.display === "block") {
+        section.style.display = "none";
+        toggle.textContent = "Advanced Options ▶";
+      } else {
+        section.style.display = "block";
+        toggle.textContent = "Advanced Options ▼";
+      }
+    }
+
+    function updatePreview(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      preview.textContent = input.value;
+      preview.style.color = input.value; // Set text color to the selected color
+    }
+
+    // Initialize preview colors from CSS variables
+    window.onload = function() {
+      // Get computed style for root element
+      const rootStyles = getComputedStyle(document.documentElement);
+      
+      // Set color inputs from CSS variables
+      document.getElementById('colorFront').value = rootStyles.getPropertyValue('--color-front-text').trim();
+      document.getElementById('colorBack').value = rootStyles.getPropertyValue('--color-back-text').trim();
+      document.getElementById('colorBackFront').value = rootStyles.getPropertyValue('--color-back-front-text').trim();
+      
+      // Update previews
+      updatePreview('colorFront', 'previewFront');
+      updatePreview('colorBack', 'previewBack');
+      updatePreview('colorBackFront', 'previewBackFront');
+    };
+
     document.getElementById("generateBtn").addEventListener("click", handleGenerate);
 
     function handleGenerate() {
       const fileInput = document.getElementById("csvFile");
       const rows = parseInt(document.getElementById("rows").value);
       const cols = parseInt(document.getElementById("cols").value);
+      const showFrontOnBack = document.getElementById("showFrontOnBack").checked;
+      const colorFront = document.getElementById("colorFront").value;
+      const colorBack = document.getElementById("colorBack").value;
+      const colorBackFront = document.getElementById("colorBackFront").value;
       const output = document.getElementById("output");
 
       if (!fileInput.files || fileInput.files.length === 0) {
         alert("Please select a CSV file.");
         return;
       }
+
+      // Set CSS variables for colors
+      document.documentElement.style.setProperty('--color-front-text', colorFront);
+      document.documentElement.style.setProperty('--color-back-text', colorBack);
+      document.documentElement.style.setProperty('--color-back-front-text', colorBackFront);
 
       const file = fileInput.files[0];
       const reader = new FileReader();
@@ -206,7 +375,7 @@
           alert("CSV file is empty or in incorrect format. Ensure it has headers: category,front,back");
           return;
         }
-        generateFlashcards(data, rows, cols, output);
+        generateFlashcards(data, rows, cols, showFrontOnBack, output);
         output.style.display = "block";
       };
 
@@ -255,7 +424,7 @@
       return result;
     }
 
-    function generateFlashcards(data, rows, cols, output) {
+    function generateFlashcards(data, rows, cols, showFrontOnBack, output) {
       const cardsPerPage = rows * cols;
       output.innerHTML = "";
 
@@ -263,7 +432,10 @@
       const cardHeight = `calc(100vh / ${rows})`;
       const cardWidth = `calc(100vw / ${cols})`;
 
-      // Generate FRONT pages (odd)
+      document.documentElement.style.setProperty('--rows', rows);
+      document.documentElement.style.setProperty('--cols', cols);
+
+      // === FRONT PAGES ===
       for (let i = 0; i < data.length; i += cardsPerPage) {
         const page = document.createElement("div");
         page.className = "card-page front";
@@ -294,7 +466,7 @@
         output.appendChild(page);
       }
 
-      // Generate BACK pages (mirrored column order per row)
+      // === BACK PAGES (mirrored column order per row)
       for (let i = 0; i < data.length; i += cardsPerPage) {
         const page = document.createElement("div");
         page.className = "card-page back";
@@ -307,12 +479,10 @@
           for (let colIdx = 0; colIdx < cols; colIdx++) {
             const idx = i + rowIdx * cols + colIdx;
             if (idx >= data.length) break;
-            cardsInRow.push({
-              index: idx,
-              data: data[idx]
-            });
+            cardsInRow.push(data[idx]);
           }
 
+          // Mirror for correct back alignment
           // Reverse the row → [Col3, Col2, Col1]
           cardsInRow.reverse();
 
@@ -325,11 +495,24 @@
 
             const categoryLabel = document.createElement("div");
             categoryLabel.className = "category-label";
-            categoryLabel.textContent = item.data.category || "Other";
+            categoryLabel.textContent = item.category || "Other";
 
             const content = document.createElement("div");
             content.className = "card-content";
-            content.textContent = item.data.back;
+
+            if (showFrontOnBack) {
+              const frontText = document.createElement("div");
+              frontText.className = "back-front-text";
+              frontText.textContent = item.front;
+
+              const backText = document.createElement("div");
+              backText.textContent = item.back;
+
+              content.appendChild(frontText);
+              content.appendChild(backText);
+            } else {
+              content.textContent = item.back;
+            }
 
             card.appendChild(categoryLabel);
             card.appendChild(content);

@@ -129,6 +129,12 @@
       margin-top: 15px;
     }
 
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
     .controls button {
       width: 100%;
       padding: 10px;
@@ -141,8 +147,13 @@
       cursor: pointer;
     }
 
-    .controls button:hover {
+    .controls button:hover:enabled {
       background: #2980b9;
+    }
+
+    .controls button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
     }
 
     #output {
@@ -339,8 +350,10 @@
       </div>
     </div>
 
-    <button id="generateBtn">Generate Flashcards</button>
-    <button onclick="window.print()">Print or Save as PDF</button>
+    <div class="button-row">
+      <button id="generateBtn">Generate Flashcards</button>
+      <button id="printBtn" onclick="window.print()" disabled>Print or Save as PDF</button>
+    </div>
     <div id="errorMessages"></div>
   </div>
 
@@ -429,6 +442,7 @@
         }
         generateFlashcards(data, rows, cols, showFrontOnBack, output);
         output.style.display = "block";
+        document.getElementById("printBtn").disabled = false; // enable print
       };
 
       reader.readAsText(file);
@@ -637,6 +651,22 @@
         output.appendChild(page);
       }
     }
+
+  function disablePrint() {
+    document.getElementById("printBtn").disabled = true;
+  }
+
+  ["csvFile", "rows", "cols", "showFrontOnBack",
+    "colorFront", "colorBack", "colorBackFront"]
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input", disablePrint);
+        el.addEventListener("change", disablePrint);
+      }
+    });
+
+
   </script>
 
 </body>

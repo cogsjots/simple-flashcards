@@ -283,7 +283,7 @@
 
     .back .card-content {
      /*  flex-direction: column; */ /* Removed as it's now default */
-      gap: 8px;
+      gap: 4px;
       color: var(--color-back-text);
     }
 
@@ -291,7 +291,7 @@
       font-size: 0.9em;
       color: var(--color-back-front-text);
       font-weight: normal;
-      margin-bottom: 5px;
+      /* margin-bottom: 5px; */
     }
   </style>
 </head>
@@ -594,7 +594,7 @@
 
           const categoryLabel = document.createElement("div");
           categoryLabel.className = "category-label";
-          categoryLabel.textContent = item.category || "Other";
+          categoryLabel.textContent = item.category || "---";
 
           const content = document.createElement("div");
           content.className = "card-content";
@@ -660,7 +660,7 @@
 
             const categoryLabel = document.createElement("div");
             categoryLabel.className = "category-label";
-            categoryLabel.textContent = item.category || "Other";
+            categoryLabel.textContent = item.category || "---";
 
             const content = document.createElement("div");
             content.className = "card-content";

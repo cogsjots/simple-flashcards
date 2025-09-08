@@ -22,8 +22,8 @@
   <style>
     :root {
       --color-front-text: #3f75ab;
-      --color-back-text: #27ae60;
-      --color-back-front-text: #555555;
+      --color-back-text: #5e5e5e;
+      --color-back-front-text: #9c9c9c;
     }
 
     body {
@@ -71,18 +71,18 @@
     .input-row.advanced-row::after {
       content: "";
       flex: 2; /* Matches input field size */
-    }  
+    }
 
     .advanced-toggle {
       flex: 1;
       text-align: right;
-      padding-right: 8px;      
+      padding-right: 8px;
       margin-top: 15px;
       cursor: pointer;
       text-decoration: none;
       color: #3498db;
       font-size: 0.9em;
-    }  
+    }
 
     .input-row .value-preview {
       font-family: monospace;
@@ -125,12 +125,12 @@
     input[type="color"]::-webkit-color-swatch {
       border: none;
       border-radius: 12px;
-    }    
+    }
 
     .input-row .span-input {
-      flex: 2; 
-      display: flex; 
-      align-items: center; 
+      flex: 2;
+      display: flex;
+      align-items: center;
       gap: 10px;
     }
 
@@ -185,6 +185,7 @@
       #errorMessages, .no-print {
         display: none !important;
       }
+
       body * {
         visibility: hidden;
       }
@@ -264,6 +265,7 @@
       line-height: 1.4;
       flex: 1;
       display: flex;
+      flex-direction: column; /* Changed to column for subtext */
       align-items: center;
       justify-content: center;
       width: 90%;
@@ -280,7 +282,7 @@
     }
 
     .back .card-content {
-      flex-direction: column;
+     /*  flex-direction: column; */ /* Removed as it's now default */
       gap: 8px;
       color: var(--color-back-text);
     }
@@ -390,10 +392,10 @@
     }
 
     // Initialize preview colors from CSS variables
-    window.onload = function() {
+    window.onload = function () {
       // Get computed style for root element
       const rootStyles = getComputedStyle(document.documentElement);
-      
+
       // Set color inputs from CSS variables
       document.getElementById('colorFront').value = rootStyles.getPropertyValue('--color-front-text').trim();
       document.getElementById('colorBack').value = rootStyles.getPropertyValue('--color-back-text').trim();
@@ -446,7 +448,7 @@
         }
 
         if (data.length === 0) {
-          errorMsg.innerHTML = "CSV file is empty or in incorrect format. Ensure it has headers: category,front,back";
+          errorMsg.innerHTML = "CSV file is empty or in incorrect format. Ensure it has headers: category,front,back[,front-subtext,back-subtext]";
           errorMsg.style.display = "block";
           return;
         }
@@ -540,12 +542,12 @@
     }
 
     function fontResize(text) {
-      const len = text.length;
+      const len = (text || "").length; // Handle potential undefined/null text
       const fontSize = len > 50 ? "1.0rem" :
                        len > 30 ? "1.3rem" :
                        len > 20 ? "1.5rem" : "1.7rem";
 
-      return fontSize;                 
+      return fontSize;
     }
 
     function generateFlashcards(data, rows, cols, showFrontOnBack, output) {
@@ -570,6 +572,7 @@
           const idx = i + j;
           if (idx >= data.length) break;
 
+          const item = data[idx]; // Get the item object
           const card = document.createElement("div");
           card.className = "card front";
           card.style.height = cardHeight;
@@ -577,21 +580,37 @@
 
           const categoryLabel = document.createElement("div");
           categoryLabel.className = "category-label";
-          categoryLabel.textContent = data[idx].category || "Other";
+          categoryLabel.textContent = item.category || "Other";
 
           const content = document.createElement("div");
           content.className = "card-content";
 
           // Auto font size based on text length
-          const text = data[idx].front;
-          const len = text.length;
-          // content.style.fontSize = len > 50 ? "1.0em" :
-          //                        len > 30 ? "1.3em" :
-          //                        len > 20 ? "1.5em" : "1.7em";
-          content.style.fontSize = fontResize(text);
-          content.innerHTML = text;
+          const text = item.front;
+          const mainFontSize = fontResize(text);
+          content.style.fontSize = mainFontSize;
+          // content.innerHTML = text; // Move innerHTML setting after subtext
+
+          // Create element for main front text
+          const frontTextElement = document.createElement("div");
+          frontTextElement.innerHTML = text;
+
+          // Check for and add front-subtext
+          const frontSubtext = item['front-subtext'];
+          let frontSubtextElement = null;
+          if (frontSubtext && frontSubtext.trim() !== "") {
+            frontSubtextElement = document.createElement("div");
+            frontSubtextElement.className = "subtext";
+            frontSubtextElement.innerHTML = frontSubtext;
+            // Calculate subtext font size relative to main text
+            frontSubtextElement.style.fontSize = `calc(${mainFontSize} * 0.6)`;
+          }
 
           card.appendChild(categoryLabel);
+          content.appendChild(frontTextElement);
+          if (frontSubtextElement) {
+            content.appendChild(frontSubtextElement);
+          }
           card.appendChild(content);
           page.appendChild(card);
         }
@@ -632,28 +651,47 @@
             const content = document.createElement("div");
             content.className = "card-content";
 
+            // Check for and add front text on back (if enabled)
+            let backFrontTextElement = null;
+            let backFrontSubtextElement = null; // For front-subtext on back
             if (showFrontOnBack) {
-              const frontText = document.createElement("div");
-              frontText.className = "back-front-text";
-              frontText.style.fontSize = `calc(${fontResize(item.front)} * 0.8)`;
-              frontText.innerHTML = item.front;
+              const frontText = item.front;
+              backFrontTextElement = document.createElement("div");
+              backFrontTextElement.className = "back-front-text";
+              const frontFontSize = fontResize(frontText);
+              backFrontTextElement.style.fontSize = `calc(${frontFontSize} * 0.6)`; // As before
+              backFrontTextElement.innerHTML = frontText;
 
-              const backText = document.createElement("div");
-              // backText.style.fontSize = item.back.length > 50 ? "1.0em" :
-              //                          item.back.length > 30 ? "1.3em" : "1.5em";
-              backText.style.fontSize = fontResize(item.back);
-              backText.innerHTML = item.back;
+            }
 
-              content.appendChild(frontText);
-              content.appendChild(backText);
-            } else {
-              // content.style.fontSize = item.back.length > 50 ? "1.0em" :
-              //                          item.back.length > 30 ? "1.3em" : "1.5em";
-              content.style.fontSize = fontResize(item.back);
-              content.innerHTML = item.back;
+            // Main back text
+            const backText = item.back;
+            const backMainTextElement = document.createElement("div");
+            // backMainTextElement.style.fontSize = item.back.length > 50 ? "1.0em" :
+            //   item.back.length > 30 ? "1.3em" : "1.5em";
+            const backMainFontSize = fontResize(backText);
+            backMainTextElement.style.fontSize = backMainFontSize;
+            backMainTextElement.innerHTML = backText;
+
+            // Check for and add back-subtext
+            const backSubtext = item['back-subtext'];
+            let backSubtextElement = null;
+            if (backSubtext && backSubtext.trim() !== "") {
+              backSubtextElement = document.createElement("div");
+              backSubtextElement.className = "subtext";
+              backSubtextElement.innerHTML = backSubtext;
+              // Calculate subtext font size relative to main back text
+              backSubtextElement.style.fontSize = `calc(${backMainFontSize} * 0.6)`;
             }
 
             card.appendChild(categoryLabel);
+            if (backFrontTextElement) {
+              content.appendChild(backFrontTextElement);
+            }
+            content.appendChild(backMainTextElement); // Append main back text
+            if (backSubtextElement) {
+              content.appendChild(backSubtextElement); // Append back subtext last
+            }
             card.appendChild(content);
             page.appendChild(card);
           });
@@ -662,9 +700,9 @@
       }
     }
 
-  function disablePrint() {
-    document.getElementById("printBtn").disabled = true;
-  }
+    function disablePrint() {
+      document.getElementById("printBtn").disabled = true;
+    }
 
   ["csvFile", "rows", "cols", "showFrontOnBack",
     "colorFront", "colorBack", "colorBackFront"]

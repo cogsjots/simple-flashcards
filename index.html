@@ -452,6 +452,20 @@
           errorMsg.style.display = "block";
           return;
         }
+
+        // --- NEW CODE: Pad data to fill last row ---
+        const cardsPerPage = rows * cols;
+        const remainder = data.length % cols;
+        if (remainder !== 0) {
+          const paddingNeeded = cols - remainder;
+          console.log(`Adding ${paddingNeeded} empty cards to fill the last row.`);
+          for (let i = 0; i < paddingNeeded; i++) {
+            // Add an empty object. The generate function will need to handle these.
+            data.push({ category: "", front: "", back: "", "front-subtext": "", "back-subtext": "" });
+          }
+        }
+        // --- END NEW CODE ---
+
         generateFlashcards(data, rows, cols, showFrontOnBack, output);
         output.style.display = "block";
         document.getElementById("printBtn").disabled = false; // enable print

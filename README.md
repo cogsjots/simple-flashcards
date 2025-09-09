@@ -1,7 +1,7 @@
 
 A **complete web app** built using **HTML, CSS, and JavaScript only** (no external libraries or frameworks) that:
 
-- Allows the user to upload a CSV file with columns: `category`, `front`, `back`
+- Allows the user to upload a CSV file with columns: `category`, `front`, `back`, `front-subtext`, `back-subtext`
 - Lets user define:
     - Number of card **rows per printed page**
     - Number of card **columns per printed page**

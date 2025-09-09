@@ -617,7 +617,7 @@
             frontSubtextElement.className = "subtext";
             frontSubtextElement.innerHTML = frontSubtext;
             // Calculate subtext font size relative to main text
-            frontSubtextElement.style.fontSize = `calc(${mainFontSize} * 0.6)`;
+            frontSubtextElement.style.fontSize = `calc(${mainFontSize} * 0.7)`;
           }
 
           card.appendChild(categoryLabel);
@@ -673,7 +673,7 @@
               backFrontTextElement = document.createElement("div");
               backFrontTextElement.className = "back-front-text";
               const frontFontSize = fontResize(frontText);
-              backFrontTextElement.style.fontSize = `calc(${frontFontSize} * 0.6)`; // As before
+              backFrontTextElement.style.fontSize = `calc(${frontFontSize} * 0.7)`; // As before
               backFrontTextElement.innerHTML = frontText;
 
             }
@@ -695,7 +695,7 @@
               backSubtextElement.className = "subtext";
               backSubtextElement.innerHTML = backSubtext;
               // Calculate subtext font size relative to main back text
-              backSubtextElement.style.fontSize = `calc(${backMainFontSize} * 0.6)`;
+              backSubtextElement.style.fontSize = `calc(${backMainFontSize} * 0.7)`;
             }
 
             card.appendChild(categoryLabel);
